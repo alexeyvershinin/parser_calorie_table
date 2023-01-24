@@ -88,4 +88,40 @@ for category_name, category_href in all_categories.items():
                 )
             )
 
+        # получаем все данные по продуктам
+        products_data = soup.find(class_='mzr-tc-group-table').find('tbody').find_all('tr')
+        product_info = []
+
+        for item in products_data:
+            product_tds = item.find_all('td')
+
+            title = product_tds[0].find('a').text
+            calories = product_tds[1].text
+            proteins = product_tds[2].text
+            fats = product_tds[3].text
+            carbohydrates = product_tds[4].text
+
+            product_info.append(
+                {
+                    'Title': title,
+                    'Calories': calories,
+                    'Proteins': proteins,
+                    'Fats': fats,
+                    'Carbohydrates': carbohydrates
+                }
+            )
+
+            # сохраняем данные по продуктам в созданный ранее файл
+            with open(f'data/{count}_{category_name}.csv', 'a', encoding='utf-8-sig') as file:
+                writer = csv.writer(file, delimiter=';', lineterminator='\n')
+                writer.writerow(
+                    (
+                        title,
+                        calories,
+                        proteins,
+                        fats,
+                        carbohydrates
+                    )
+                )
+
         count += 1
