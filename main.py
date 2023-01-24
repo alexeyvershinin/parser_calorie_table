@@ -37,3 +37,27 @@ for item in all_products_hrefs:
 # сохраняем данные в json
 with open('all_categories_dict.json', 'w', encoding='utf-8') as file:
     json.dump(all_categories_dict, file, indent=4, ensure_ascii=False)
+
+with open('all_categories_dict.json', encoding='utf-8') as file:
+    all_categories = json.load(file)
+
+count = 0
+# на каждой итерации цикла заходим на новую страницу категории и собираем данные
+for category_name, category_href in all_categories.items():
+
+    if count == 0:
+        # заменяем символы в именах категорий
+        rep = [",", " ", "-", "'"]
+        for item in rep:
+            if item in category_name:
+                category_name = category_name.replace(item, '_')
+
+        # переходим по ссылке категории и получаем данные
+        r = requests.get(url=category_href, headers=headers)
+        src = r.text
+
+        # сохраняем данные в html
+        with open(f'data/{count}_{category_name}.html', 'w', encoding='utf-8') as file:
+            file.write(src)
+
+        count += 1
