@@ -1,3 +1,4 @@
+import csv
 import json
 import requests
 import fake_useragent
@@ -59,5 +60,32 @@ for category_name, category_href in all_categories.items():
         # сохраняем данные в html
         with open(f'data/{count}_{category_name}.html', 'w', encoding='utf-8') as file:
             file.write(src)
+
+        with open(f'data/{count}_{category_name}.html', encoding='utf-8') as file:
+            category_page = file.read()
+
+        soup = BeautifulSoup(category_page, 'lxml')
+
+        # получаем заголовки таблицы
+        table_head = soup.find(class_='mzr-tc-group-table').find('tr').find_all('th')
+
+        product = table_head[0].text
+        calories = table_head[1].text
+        proteins = table_head[2].text
+        fats = table_head[3].text
+        carbohydrates = table_head[4].text
+
+        # сохраняем заголовки таблицы в файл .csv
+        with open(f'data/{count}_{category_name}.csv', 'w', encoding='utf-8-sig') as file:
+            writer = csv.writer(file, delimiter=';', lineterminator='\n')
+            writer.writerow(
+                (
+                    product,
+                    calories,
+                    proteins,
+                    fats,
+                    carbohydrates
+                )
+            )
 
         count += 1
