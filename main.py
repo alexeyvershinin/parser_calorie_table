@@ -42,45 +42,88 @@ with open('all_categories_dict.json', 'w', encoding='utf-8') as file:
 with open('all_categories_dict.json', encoding='utf-8') as file:
     all_categories = json.load(file)
 
+iteration_count = int(len(all_categories)) - 1
 count = 0
+print(f'Всего итераций: {iteration_count}')
+
 # на каждой итерации цикла заходим на новую страницу категории и собираем данные
 for category_name, category_href in all_categories.items():
 
-    if count == 0:
-        # заменяем символы в именах категорий
-        rep = [",", " ", "-", "'"]
-        for item in rep:
-            if item in category_name:
-                category_name = category_name.replace(item, '_')
+    # заменяем символы в именах категорий
+    rep = [",", " ", "-", "'"]
+    for item in rep:
+        if item in category_name:
+            category_name = category_name.replace(item, '_')
 
-        # переходим по ссылке категории и получаем данные
-        r = requests.get(url=category_href, headers=headers)
-        src = r.text
+    # переходим по ссылке категории и получаем данные
+    r = requests.get(url=category_href, headers=headers)
+    src = r.text
 
-        # сохраняем данные в html
-        with open(f'data/{count}_{category_name}.html', 'w', encoding='utf-8') as file:
-            file.write(src)
+    # сохраняем данные в html
+    with open(f'data/{count}_{category_name}.html', 'w', encoding='utf-8') as file:
+        file.write(src)
 
-        with open(f'data/{count}_{category_name}.html', encoding='utf-8') as file:
-            category_page = file.read()
+    with open(f'data/{count}_{category_name}.html', encoding='utf-8') as file:
+        category_page = file.read()
 
-        soup = BeautifulSoup(category_page, 'lxml')
+    soup = BeautifulSoup(category_page, 'lxml')
 
-        # получаем заголовки таблицы
-        table_head = soup.find(class_='mzr-tc-group-table').find('tr').find_all('th')
+    # проверяем страницу на наличие таблицы с продуктами
+    alert_block = soup.find(class_='uk-alert-danger')
+    if alert_block is not None:
+        continue
 
-        product = table_head[0].text
-        calories = table_head[1].text
-        proteins = table_head[2].text
-        fats = table_head[3].text
-        carbohydrates = table_head[4].text
+    # получаем заголовки таблицы
+    table_head = soup.find(class_='mzr-tc-group-table').find('tr').find_all('th')
 
-        # сохраняем заголовки таблицы в файл .csv
-        with open(f'data/{count}_{category_name}.csv', 'w', encoding='utf-8-sig') as file:
+    product = table_head[0].text
+    calories = table_head[1].text
+    proteins = table_head[2].text
+    fats = table_head[3].text
+    carbohydrates = table_head[4].text
+
+    # сохраняем заголовки таблицы в файл .csv
+    with open(f'data/{count}_{category_name}.csv', 'w', encoding='utf-8-sig') as file:
+        writer = csv.writer(file, delimiter=';', lineterminator='\n')
+        writer.writerow(
+            (
+                product,
+                calories,
+                proteins,
+                fats,
+                carbohydrates
+            )
+        )
+
+    # получаем все данные по продуктам
+    products_data = soup.find(class_='mzr-tc-group-table').find('tbody').find_all('tr')
+    product_info = []
+
+    for item in products_data:
+        product_tds = item.find_all('td')
+
+        title = product_tds[0].find('a').text
+        calories = product_tds[1].text
+        proteins = product_tds[2].text
+        fats = product_tds[3].text
+        carbohydrates = product_tds[4].text
+
+        product_info.append(
+            {
+                'Title': title,
+                'Calories': calories,
+                'Proteins': proteins,
+                'Fats': fats,
+                'Carbohydrates': carbohydrates
+            }
+        )
+
+        # сохраняем данные по продуктам в созданный ранее файл
+        with open(f'data/{count}_{category_name}.csv', 'a', encoding='utf-8-sig') as file:
             writer = csv.writer(file, delimiter=';', lineterminator='\n')
             writer.writerow(
                 (
-                    product,
+                    title,
                     calories,
                     proteins,
                     fats,
@@ -88,40 +131,12 @@ for category_name, category_href in all_categories.items():
                 )
             )
 
-        # получаем все данные по продуктам
-        products_data = soup.find(class_='mzr-tc-group-table').find('tbody').find_all('tr')
-        product_info = []
+    count += 1
+    print(f'Итерация # {count}, {category_name} записан...')
+    iteration_count -= 1
 
-        for item in products_data:
-            product_tds = item.find_all('td')
+    if iteration_count == 0:
+        print('Данные собраны')
+        break
 
-            title = product_tds[0].find('a').text
-            calories = product_tds[1].text
-            proteins = product_tds[2].text
-            fats = product_tds[3].text
-            carbohydrates = product_tds[4].text
-
-            product_info.append(
-                {
-                    'Title': title,
-                    'Calories': calories,
-                    'Proteins': proteins,
-                    'Fats': fats,
-                    'Carbohydrates': carbohydrates
-                }
-            )
-
-            # сохраняем данные по продуктам в созданный ранее файл
-            with open(f'data/{count}_{category_name}.csv', 'a', encoding='utf-8-sig') as file:
-                writer = csv.writer(file, delimiter=';', lineterminator='\n')
-                writer.writerow(
-                    (
-                        title,
-                        calories,
-                        proteins,
-                        fats,
-                        carbohydrates
-                    )
-                )
-
-        count += 1
+    print(f'Осталось итераций: {iteration_count}')
