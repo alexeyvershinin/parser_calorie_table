@@ -1,2 +1,2 @@
-data/* linguist-vendored
+* linguist-vendored
 *.py linguist-vendored=false
